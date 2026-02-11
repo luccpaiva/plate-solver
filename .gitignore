@@ -4,8 +4,8 @@ node_modules/
 # Build output
 dist/
 
-# Benchmark/profile output (generated)
-public/tools/profiling/output/mesh-scaling.json
+# Benchmark output (generated)
+tools/benchmarks/output/
 
 # Environment
 .env

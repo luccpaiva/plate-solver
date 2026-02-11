@@ -1,7 +1,9 @@
 /**
  * Debug script: run FEA solver with initial example params and trace for infinity/NaN.
  */
-import { solveFEA } from "../solver/index.js";
+import { solveFEA, setSolverBackend } from "../../src/solver/index.js";
+
+setSolverBackend("js");
 
 const params = {
   plate: { width: 20, length: 20, thickness: 0.2 },
@@ -16,7 +18,7 @@ const params = {
 
 console.log("Params:", JSON.stringify(params, null, 2));
 
-const results = solveFEA(params);
+const results = await solveFEA(params);
 
 const { deflections, maxDeflection, minDeflection } = results;
 

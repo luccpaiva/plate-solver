@@ -1,0 +1,20 @@
+body { font-family: system-ui, sans-serif; margin: 24px; background: #1a1a2e; color: #eee; max-width: 1000px; }
+h1 { margin-bottom: 8px; }
+h2 { font-size: 1.1em; margin: 0 0 8px; color: #94a3b8; }
+.explanation { background: #16213e; border-left: 3px solid #4ade80; padding: 12px 16px; margin: 16px 0; border-radius: 4px; font-size: 0.92em; line-height: 1.55; color: #cbd5e1; }
+.explanation ul { margin: 6px 0 6px 20px; padding: 0; }
+.explanation li { margin: 4px 0; }
+.explanation code { background: #1e293b; padding: 1px 5px; border-radius: 3px; font-size: 0.93em; }
+.meta { color: #888; font-size: 0.9em; margin-bottom: 16px; }
+.chart-container { max-width: 900px; height: 400px; margin: 24px 0; }
+.controls { margin: 16px 0; }
+button { padding: 10px 20px; font-size: 1rem; background: #4ade80; color: #1a1a2e; border: none; border-radius: 6px; cursor: pointer; }
+button:hover { background: #22c55e; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.status { margin: 12px 0; color: #94a3b8; }
+.error { color: #fb923c; margin-top: 16px; }
+table { border-collapse: collapse; margin: 16px auto 0; }
+th, td { padding: 8px 20px; text-align: center; border-bottom: 1px solid #333; }
+th { color: #94a3b8; font-weight: 500; }
+.speedup { color: #4ade80; }
+a { color: #4ade80; }

@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:wasm": "node wasm/build.mjs",
     "preview": "vite preview",
-    "test:infinite": "node src/tests/check-infinite.mjs",
-    "test:symmetry": "node src/tests/symmetry.mjs",
-    "test:abaqus": "node src/tests/abaqus.mjs",
-    "benchmark": "node src/benchmarks/mesh-scaling.mjs",
-    "test": "node src/tests/run-all.mjs",
+    "test:infinite": "node tools/tests/check-infinite.mjs",
+    "test:symmetry": "node tools/tests/symmetry.mjs",
+    "test:abaqus": "node tools/tests/abaqus.mjs",
+    "benchmark": "node tools/benchmarks/mesh-scaling.mjs",
+    "benchmark:compare": "node tools/benchmarks/wasm-vs-js.mjs",
+    "test": "node tools/tests/run-all.mjs",
     "lint": "eslint src/"
   },
   "dependencies": {

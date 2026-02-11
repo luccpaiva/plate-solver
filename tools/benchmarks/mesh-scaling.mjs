@@ -3,14 +3,15 @@
  * Gradually increases nx=ny and records nodes vs compute time.
  * Output written to tools/profiling/output/mesh-scaling.json for plotting.
  */
-import { solveFEA } from "../solver/index.js";
+import { solveFEA, setSolverBackend } from "../../src/solver/index.js";
+
+setSolverBackend("js");
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = join(__dirname, "..", "..");
-const outDir = join(root, "public", "tools", "profiling", "output");
+const outDir = join(__dirname, "output");
 const outFile = join(outDir, "mesh-scaling.json");
 
 const params = {
@@ -41,7 +42,7 @@ for (const n of MESH_SIZES) {
 
   let sum = 0;
   for (let r = 0; r < RUNS; r++) {
-    const result = solveFEA({ ...params, nx, ny });
+    const result = await solveFEA({ ...params, nx, ny });
     sum += result.solveTime;
   }
   const avgMs = sum / RUNS;
@@ -67,4 +68,4 @@ mkdirSync(outDir, { recursive: true });
 writeFileSync(outFile, JSON.stringify(output, null, 2), "utf8");
 
 console.log(`\nResults written to ${outFile}`);
-console.log("\nTo view: npm run dev → /tools/profiling/mesh-scaling-benchmark.html");
+console.log("\nTo view: npm run dev → /tools/benchmarks/mesh-scaling-benchmark.html");

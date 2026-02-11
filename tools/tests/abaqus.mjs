@@ -3,7 +3,9 @@
  * Plate: 10x10, 20x20, 30x30 m with shared properties.
  * All edges simply supported. 5% tolerance.
  */
-import { solveFEA } from "../solver/index.js";
+import { solveFEA, setSolverBackend } from "../../src/solver/index.js";
+
+setSolverBackend("js");
 
 const props = {
   material: { E: 20e9, nu: 0.3 },
@@ -22,10 +24,10 @@ const cases = [
 const TOL = 0.05; // 5%
 
 // Mesh: ~1 element per meter
-function runCase(c) {
+async function runCase(c) {
   const nx = Math.max(10, Math.round(c.width));
   const ny = Math.max(10, Math.round(c.length));
-  const result = solveFEA({
+  const result = await solveFEA({
     ...props,
     plate: { width: c.width, length: c.length, thickness: c.thickness },
     nx,
@@ -40,7 +42,7 @@ console.log("Edge support: all four edges\n");
 
 let allPass = true;
 for (const c of cases) {
-  const ours = runCase(c);
+  const ours = await runCase(c);
   const ref = c.abaqus;
   const err = Math.abs(ours - ref) / ref;
   const pass = err <= TOL;

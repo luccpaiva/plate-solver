@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wasm vs JS Solver Benchmark</title>
+  <link rel="stylesheet" href="benchmark.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Wasm vs JS Solver Benchmark</h1>
+
+  <section class="explanation">
+    <h2>What is being measured</h2>
+    <p>This benchmark compares two implementations of a <strong>Mindlin plate finite-element solver</strong>:</p>
+    <ul>
+      <li><strong>JavaScript</strong> &mdash; dense stiffness matrix solved with Gauss elimination (<code>src/solver/mindlin.js</code>).</li>
+      <li><strong>WebAssembly</strong> &mdash; banded stiffness matrix solved with Cholesky factorisation, compiled from C++ via Emscripten (<code>wasm/solver.cpp</code>).</li>
+    </ul>
+    <p>For each mesh size <em>n&times;n</em>, the solver assembles and solves a system with <strong>DOF&nbsp;=&nbsp;3&thinsp;(n+1)&sup2;</strong> (three unknowns per node: deflection&nbsp;<em>w</em>, and two rotations&nbsp;<em>&theta;<sub>x</sub></em>,&nbsp;<em>&theta;<sub>y</sub></em>).
+    The reported time covers <strong>assembly + solve only</strong> &mdash; no rendering, no DOM updates.
+    Each mesh size is run 2&nbsp;warm-up iterations (discarded) followed by 5&nbsp;timed iterations; the chart shows the average of the timed runs.</p>
+    <p>The test problem is a simply-supported 20&thinsp;m&nbsp;&times;&nbsp;20&thinsp;m plate under 1&thinsp;kPa uniform load.</p>
+  </section>
+
+  <div class="controls">
+    <button id="runBtn">Run benchmark</button>
+  </div>
+  <p id="status" class="status"></p>
+  <div id="progressWrap" style="display:none">
+    <div style="background:#333;border-radius:4px;height:8px;width:100%;max-width:500px">
+      <div id="progressBar" style="background:#4ade80;height:100%;border-radius:4px;width:0%;transition:width 0.2s"></div>
+    </div>
+  </div>
+  <div class="chart-container" style="display:none">
+    <canvas id="chart"></canvas>
+  </div>
+  <div id="tableWrap" style="display:none"></div>
+  <p id="error" class="error" style="display:none"></p>
+  <p><a href="/">← Back to app</a></p>
+
+  <script type="module">
+    import { solveFEA, setSolverBackend } from "/src/solver/index.js";
+    import { loadWasmSolver, isWasmReady } from "/src/solver/wasm-loader.js";
+
+    const RUNS = 5;
+    const WARMUP = 2;
+    const MESH_SIZES = [5, 10, 15, 20, 25, 30, 35, 41, 45, 50, 55, 60, 65, 70];
+    const params = {
+      plate: { width: 20, length: 20, thickness: 0.2 },
+      material: { E: 20e9, nu: 0.3 },
+      load: 1000,
+      pillars: [],
+      edgeSupported: { left: true, right: true, top: true, bottom: true }
+    };
+
+    const yield_ = () => new Promise(r => setTimeout(r, 0));
+
+    function setProgress(fraction) {
+      const wrap = document.getElementById("progressWrap");
+      wrap.style.display = fraction >= 0 ? "block" : "none";
+      document.getElementById("progressBar").style.width = (fraction * 100) + "%";
+    }
+
+    function setStatus(msg) {
+      document.getElementById("status").textContent = msg;
+    }
+    function setError(msg) {
+      const el = document.getElementById("error");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    async function runBackend(backend, passOffset, totalSteps) {
+      const results = [];
+      setSolverBackend(backend);
+      const total = MESH_SIZES.length;
+      for (let idx = 0; idx < total; idx++) {
+        const n = MESH_SIZES[idx];
+        const nx = n, ny = n;
+        const nodes = (nx + 1) * (ny + 1);
+        const dof = nodes * 3;
+        setStatus(`${backend.toUpperCase()} nx=${nx}  (${idx + 1}/${total}, DOF ${dof.toLocaleString()})...`);
+        setProgress((passOffset + idx) / totalSteps);
+        await yield_();
+        const times = [];
+        for (let r = 0; r < WARMUP + RUNS; r++) {
+          const result = await solveFEA({ ...params, nx, ny });
+          if (r >= WARMUP) times.push(result.solveTime);
+        }
+        const sum = times.reduce((a, b) => a + b, 0);
+        const avg = sum / RUNS;
+        results.push({ nx, ny, nodes, dof, solveTimeMs: avg });
+      }
+      return results;
+    }
+
+    document.getElementById("runBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("runBtn");
+      btn.disabled = true;
+      document.getElementById("error").style.display = "none";
+
+      try {
+        setStatus("Loading Wasm...");
+        setProgress(0);
+        const wasmOk = await loadWasmSolver();
+
+        const jsResults = [];
+        const wasmResults = [];
+        const n = MESH_SIZES.length;
+        const totalSteps = wasmOk && isWasmReady() ? n * 2 : n;
+
+        const js = await runBackend("js", 0, totalSteps);
+        jsResults.push(...js);
+
+        if (wasmOk && isWasmReady()) {
+          const wasm = await runBackend("wasm", n, totalSteps);
+          wasmResults.push(...wasm);
+        } else {
+          setStatus("Wasm not available; benchmarking JS only.");
+        }
+
+        const data = {
+          timestamp: new Date().toISOString(),
+          js: jsResults,
+          wasm: wasmResults,
+          wasmAvailable: wasmOk && isWasmReady()
+        };
+
+        setProgress(1);
+        renderChart(data);
+        renderTable(data);
+        setStatus(`Done. JS: ${jsResults.length} points. Wasm: ${wasmResults.length} points.`);
+        setProgress(-1);
+      } catch (e) {
+        setError(e.message);
+        setStatus("");
+        setProgress(-1);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    let chartInstance = null;
+    function renderChart(data) {
+      const chartEl = document.getElementById("chart");
+      const container = chartEl.closest(".chart-container");
+      container.style.display = "block";
+      if (chartInstance) chartInstance.destroy();
+
+      const dofJs = data.js.map(r => r.dof);
+      const timeJs = data.js.map(r => r.solveTimeMs);
+
+      const datasets = [{
+        label: "JavaScript",
+        data: dofJs.map((d, i) => ({ x: d, y: timeJs[i] })),
+        backgroundColor: "rgb(233, 69, 96)",
+        borderColor: "rgb(233, 69, 96)",
+        showLine: true,
+        tension: 0.1
+      }];
+
+      if (data.wasmAvailable && data.wasm.length) {
+        datasets.push({
+          label: "WebAssembly",
+          data: data.wasm.map(r => ({ x: r.dof, y: r.solveTimeMs })),
+          backgroundColor: "rgb(74, 222, 128)",
+          borderColor: "rgb(74, 222, 128)",
+          showLine: true,
+          tension: 0.1
+        });
+      }
+
+      chartInstance = new Chart(chartEl, {
+        type: "scatter",
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { font: { size: 14 }, color: "#ccc" } },
+            tooltip: {
+              titleFont: { size: 14 },
+              bodyFont: { size: 14 },
+              callbacks: {
+                label: ctx => `DOF: ${ctx.raw.x}, ${ctx.dataset.label}: ${ctx.raw.y.toFixed(0)} ms`
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "DOF", color: "#888", font: { size: 14 } },
+              ticks: { color: "#888", font: { size: 13 } },
+              grid: { color: "#333" }
+            },
+            y: {
+              title: { display: true, text: "Solve time (ms)", color: "#888", font: { size: 14 } },
+              ticks: { color: "#888", font: { size: 13 } },
+              grid: { color: "#333" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function renderTable(data) {
+      const wrap = document.getElementById("tableWrap");
+      wrap.style.display = "block";
+
+      let html = "<table><thead><tr><th>nx</th><th>DOF</th><th>JS (ms)</th>";
+      if (data.wasmAvailable && data.wasm.length) {
+        html += "<th>Wasm (ms)</th><th>Speedup</th>";
+      }
+      html += "</tr></thead><tbody>";
+
+      for (let i = 0; i < data.js.length; i++) {
+        const j = data.js[i];
+        html += `<tr><td>${j.nx}</td><td>${j.dof.toLocaleString()}</td><td>${j.solveTimeMs.toFixed(1)}</td>`;
+        if (data.wasmAvailable && data.wasm[i]) {
+          const w = data.wasm[i];
+          const raw = w.solveTimeMs > 0 ? j.solveTimeMs / w.solveTimeMs : 0;
+          const speedup = raw >= 999 || !Number.isFinite(raw) ? "&gt;999" : raw.toFixed(2);
+          html += `<td>${w.solveTimeMs.toFixed(1)}</td><td class="speedup">${speedup}×</td>`;
+        }
+        html += "</tr>";
+      }
+      html += "</tbody></table>";
+      wrap.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

@@ -3,7 +3,9 @@
  * Runs with alternated edge support (left/bottom vs right/top) and checks
  * that deflection fields are mirror images.
  */
-import { solveFEA } from "../solver/index.js";
+import { solveFEA, setSolverBackend } from "../../src/solver/index.js";
+
+setSolverBackend("js");
 
 const base = {
   plate: { width: 20, length: 20, thickness: 0.2 },
@@ -40,8 +42,8 @@ console.log("Symmetry test: alternated edge support");
 console.log("Config A: left + bottom supported");
 console.log("Config B: right + top supported (mirror of A)\n");
 
-const resultA = solveFEA(configA);
-const resultB = solveFEA(configB);
+const resultA = await solveFEA(configA);
+const resultB = await solveFEA(configB);
 
 const defA = resultA.deflections;
 const defB = resultB.deflections;
