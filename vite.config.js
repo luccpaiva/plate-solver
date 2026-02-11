@@ -7,6 +7,7 @@ export default defineConfig({
     outDir: "dist",
     rollupOptions: {
       input: "index.html",
+      external: ["/wasm/solver.js"],
     },
   },
 });
