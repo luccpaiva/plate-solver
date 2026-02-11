@@ -68,10 +68,20 @@
                 <input type="range" id="deflectionScale" min="1" max="200" value="50" step="1">
             </div>
             <div class="control-group">
-                <label><input type="checkbox" id="showMainGrid" checked> Main grid</label>
+                <label><input type="checkbox" id="showMainGrid"> Main grid</label>
             </div>
             <div class="control-group">
-                <label><input type="checkbox" id="showMeshGrid" checked> Mesh grid</label>
+                <label><input type="checkbox" id="showMeshGrid"> Mesh grid</label>
+            </div>
+            <h2>Solver</h2>
+            <div class="mode-toggle solver-backend">
+                <button id="backendAuto" class="active" data-backend="auto">Auto</button>
+                <button id="backendWasm" data-backend="wasm">Wasm</button>
+                <button id="backendJs" data-backend="js">JS</button>
+            </div>
+            <h2>Tools</h2>
+            <div class="mode-toggle">
+                <button id="openBenchmark">Benchmark</button>
             </div>
         </div>
         <div id="viewport">
@@ -82,10 +92,6 @@
                     <span class="result-value" id="maxDeflection">-- mm</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Min Deflection</span>
-                    <span class="result-value" id="minDeflection">-- mm</span>
-                </div>
-                <div class="result-item">
                     <span class="result-label">Pillars</span>
                     <span class="result-value" id="pillarCount">0</span>
                 </div>
@@ -94,12 +100,8 @@
                     <span class="result-value" id="dofCount">--</span>
                 </div>
                 <div class="result-item">
-                    <span class="result-label">Solve Time</span>
-                    <span class="result-value" id="solveTime">-- ms</span>
-                </div>
-                <div class="result-item" id="factorTimeRow" style="display: none;">
-                    <span class="result-label">Factor Time</span>
-                    <span class="result-value" id="factorTime">-- ms</span>
+                    <span class="result-label">Update Time</span>
+                    <span class="result-value" id="totalTime">-- ms</span>
                 </div>
                 <div class="result-item">
                     <span class="result-label">Solver</span>

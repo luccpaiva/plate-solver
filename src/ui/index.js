@@ -2,6 +2,7 @@
  * UI event handlers and setup.
  */
 import * as THREE from "three";
+import { setSolverBackend } from "../solver/index.js";
 
 function setupSlider(
   id,
@@ -225,6 +226,25 @@ export function setupUI(state, api) {
       state.pillars = [];
       pillarConfig?.forEach((el) => el.classList.remove("active"));
       onChange();
+    });
+  }
+
+  const backendButtons = document.querySelectorAll(".solver-backend button");
+  backendButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      backendButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const backend = btn.dataset.backend;
+      state.solverBackend = backend;
+      setSolverBackend(backend);
+      onChange();
+    });
+  });
+
+  const openBenchmark = document.getElementById("openBenchmark");
+  if (openBenchmark) {
+    openBenchmark.addEventListener("click", () => {
+      window.open("/tools/benchmarks/wasm-vs-js-benchmark.html", "_blank");
     });
   }
 
