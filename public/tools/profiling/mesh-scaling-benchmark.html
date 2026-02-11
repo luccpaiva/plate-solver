@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesh scaling: DOF vs solve time</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; background: #1a1a2e; color: #eee; }
+    h1 { margin-bottom: 8px; }
+    .meta { color: #888; font-size: 0.9em; margin-bottom: 24px; }
+    .chart-container { max-width: 900px; height: 400px; margin-bottom: 24px; }
+    .error { color: #fb923c; margin-top: 16px; }
+    a { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <h1>Mesh scaling: DOF vs solve time</h1>
+  <p class="meta">Run <code>npm run benchmark</code> to generate data, then refresh this page.</p>
+  <div class="chart-container">
+    <canvas id="chart"></canvas>
+  </div>
+  <p id="error" class="error" style="display:none"></p>
+  <p><a href="/">← Back to app</a></p>
+
+  <script type="module">
+    const errEl = document.getElementById("error");
+    try {
+      const res = await fetch("/tools/profiling/output/mesh-scaling.json");
+      if (!res.ok) throw new Error("No data. Run: npm run benchmark");
+      const data = await res.json();
+
+      const dof = data.results.map(r => r.dof);
+      const solveTimeMs = data.results.map(r => r.solveTimeMs);
+
+      new Chart(document.getElementById("chart"), {
+        type: "scatter",
+        data: {
+          datasets: [{
+            label: "Solve time (ms)",
+            data: dof.map((d, i) => ({ x: d, y: solveTimeMs[i] })),
+            backgroundColor: "rgb(233, 69, 96)",
+            borderColor: "rgb(233, 69, 96)",
+            showLine: true,
+            tension: 0.1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `DOF: ${ctx.raw.x}, Time: ${ctx.raw.y.toFixed(0)} ms`
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "DOF", color: "#888" },
+              ticks: { color: "#888" },
+              grid: { color: "#333" }
+            },
+            y: {
+              title: { display: true, text: "Solve time (ms)", color: "#888" },
+              ticks: { color: "#888" },
+              grid: { color: "#333" },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+
+      document.querySelector(".meta").textContent =
+        `Data from ${new Date(data.timestamp).toLocaleString()} • ${data.results.length} points`;
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.style.display = "block";
+    }
+  </script>
+</body>
+</html>

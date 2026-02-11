@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plate Structural Analysis</title>
+</head>
+<body>
+    <div id="app">
+        <div id="sidebar">
+            <h1>Plate Analysis</h1>
+            <h2>Plate Properties</h2>
+            <div class="control-group">
+                <label>Width (m) <span class="value-display" id="widthValue">20</span></label>
+                <input type="range" id="plateWidth" min="10" max="50" value="20" step="1">
+            </div>
+            <div class="control-group">
+                <label>Length (m) <span class="value-display" id="lengthValue">20</span></label>
+                <input type="range" id="plateLength" min="10" max="60" value="20" step="1">
+            </div>
+            <div class="control-group">
+                <label>Thickness (mm) <span class="value-display" id="thicknessValue">200</span></label>
+                <input type="range" id="plateThickness" min="100" max="500" value="200" step="10">
+            </div>
+            <h2>Material (Concrete)</h2>
+            <div class="control-group">
+                <label>E Modulus (GPa) <span class="value-display" id="eValue">20</span></label>
+                <input type="range" id="eMod" min="10" max="50" value="20" step="1">
+            </div>
+            <div class="control-group">
+                <label>Poisson's Ratio <span class="value-display" id="nuValue">0.30</span></label>
+                <input type="range" id="poisson" min="0.1" max="0.3" value="0.3" step="0.01">
+            </div>
+            <h2>Loading</h2>
+            <div class="control-group">
+                <label>Uniform Load (kN/m²) <span class="value-display" id="loadValue">1.0</span></label>
+                <input type="range" id="uniformLoad" min="0" max="20" value="1" step="0.5">
+            </div>
+            <h2>Edit Mode</h2>
+            <div class="mode-toggle">
+                <button id="modeAddPillar" class="active">Add Pillar</button>
+                <button id="modeRemove">Remove</button>
+            </div>
+            <h2>Edge support</h2>
+            <p class="edge-hint">Click an edge to toggle supported / free</p>
+            <svg id="edgeDiagram" class="edge-diagram-svg" viewBox="0 0 100 72" width="120" height="86" title="Click an edge to toggle support">
+                <rect class="edge-plate-fill" x="16" y="14" width="68" height="44" rx="2" />
+                <rect class="edge-strip" data-edge="left"   x="0"  y="0"  width="16" height="72" rx="2" />
+                <rect class="edge-strip" data-edge="right"  x="84" y="0"  width="16" height="72" rx="2" />
+                <rect class="edge-strip" data-edge="top"    x="16" y="0"  width="68" height="14" rx="2" />
+                <rect class="edge-strip" data-edge="bottom" x="16" y="58" width="68" height="14" rx="2" />
+            </svg>
+            <h2>Pillar configuration</h2>
+            <div class="mode-toggle pillar-config">
+                <button id="pillar1Center" class="active">1 Center</button>
+                <button id="pillar3Spaced">3 Equally spaced</button>
+                <button id="pillar6Spaced">6 Equally spaced</button>
+            </div>
+            <button id="clearPillars" class="secondary">Clear All Pillars</button>
+            <h2>Mesh Resolution</h2>
+            <div class="control-group">
+                <label>Grid size <span class="value-display" id="meshResolutionValue">100</span></label>
+                <input type="range" id="meshResolution" min="100" max="2500" value="100" step="50">
+            </div>
+            <h2>Display</h2>
+            <div class="control-group">
+                <label>Deflection scale <span class="value-display" id="deflectionScaleValue">50</span></label>
+                <input type="range" id="deflectionScale" min="1" max="200" value="50" step="1">
+            </div>
+            <div class="control-group">
+                <label><input type="checkbox" id="showMainGrid" checked> Main grid</label>
+            </div>
+            <div class="control-group">
+                <label><input type="checkbox" id="showMeshGrid" checked> Mesh grid</label>
+            </div>
+        </div>
+        <div id="viewport">
+            <canvas id="canvas"></canvas>
+            <div id="results">
+                <div class="result-item">
+                    <span class="result-label">Max Deflection</span>
+                    <span class="result-value" id="maxDeflection">-- mm</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Min Deflection</span>
+                    <span class="result-value" id="minDeflection">-- mm</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Pillars</span>
+                    <span class="result-value" id="pillarCount">0</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">DOF</span>
+                    <span class="result-value" id="dofCount">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Solve Time</span>
+                    <span class="result-value" id="solveTime">-- ms</span>
+                </div>
+                <div class="result-item" id="factorTimeRow" style="display: none;">
+                    <span class="result-label">Factor Time</span>
+                    <span class="result-value" id="factorTime">-- ms</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Solver</span>
+                    <span class="result-value" id="solverLabel">FEA</span>
+                </div>
+            </div>
+            <div id="legend">
+                <h3>Deflection (mm)</h3>
+                <div>
+                    <div id="colorbar"></div>
+                    <div class="legend-labels">
+                        <span id="legendMax">0</span>
+                        <span id="legendMid">--</span>
+                        <span id="legendMin">--</span>
+                    </div>
+                </div>
+            </div>
+            <div id="instructions">
+                Click on plate to add/remove pillars | Scroll to zoom | Drag to rotate
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
