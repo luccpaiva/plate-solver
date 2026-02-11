@@ -1,6 +1,28 @@
 /**
- * Mindlin-Reissner Plate FEA Solver — Banded Cholesky variant
- * exploiting the SPD structure of the stiffness matrix.
+ * Mindlin-Reissner Plate FEA Solver
+ * Gauss elimination with partial pivoting. 3 DOF/node: w, βx, βy.
+ * Pillars expect coords in [0,width]×[0,length] (local).
+ *
+ * ## Mindlin-Reissner plate
+ * First-order shear deformation; transverse normals remain straight but not necessarily
+ * perpendicular to the midplane. Valid for moderate thickness (t/L roughly up to 0.2).
+ *
+ * ## Main assumptions
+ * - **Linear elasticity**: small deflections, Hooke's law, no geometric nonlinearity.
+ *   Large deflections (e.g. w ~ t) develop membrane stiffening not captured here.
+ * - **Homogeneous isotropic material**: E, ν constant; no orthotropy or layers.
+ * - **Uniform thickness**: t constant across the plate.
+ * - **Rectangular domain**: regular nx×ny grid of 4-node bilinear elements.
+ *
+ * ## Simplifications
+ * - **Load**: Uniform pressure only; no point loads or varying pressure.
+ * - **Boundary conditions**: Penalty method (diagonal scaling) instead of elimination;
+ *   edge supports fix w only (no rotation constraints); pillar "pinned" = w fixed,
+ *   "fixed" = w, βx, βy fixed.
+ * - **Numerics**: Dense global stiffness; Gauss elimination O(n³). No sparse solver,
+ *   no iterative solvers, no factorization reuse.
+ * - **Integration**: 2×2 Gauss for bending, reduced 1-point for shear (common to avoid
+ *   shear locking; κ = 5/6 for shear correction).
  */
 
 export function solvePlate(params) {
@@ -19,23 +41,19 @@ export function solvePlate(params) {
   const elemWidth = width / nx;
   const elemLength = length / ny;
 
-  const bw = 3 * (nodesX + 1) + 2;
-  let stride = bw + 1;
-  if ((bw & (bw - 1)) === 0) stride++;  // avoid power-of-2 step in Cholesky inner loop
-
   let t = performance.now();
   const Ke = computeElementStiffness(elemWidth, elemLength, thickness, E, nu);
-  if (reportTiming) console.log(`  [solver2] element stiffness: ${(performance.now() - t).toFixed(1)} ms`);
+  if (reportTiming) console.log(`  [solver] element stiffness: ${(performance.now() - t).toFixed(1)} ms`);
 
   t = performance.now();
-  const Band = new Float64Array(totalDof * stride);
-  assembleGlobalBanded(Band, stride, Ke, nx, ny, nodesX, dofPerNode);
-  if (reportTiming) console.log(`  [solver2] global assembly (banded): ${(performance.now() - t).toFixed(1)} ms`);
+  const K = new Float64Array(totalDof * totalDof);
+  assembleGlobalDense(K, Ke, nx, ny, nodesX, dofPerNode, totalDof);
+  if (reportTiming) console.log(`  [solver] global assembly (dense): ${(performance.now() - t).toFixed(1)} ms`);
 
   t = performance.now();
   const rhs = new Float64Array(totalDof);
   assembleLoads(rhs, load, elemWidth, elemLength, nx, ny, nodesX);
-  if (reportTiming) console.log(`  [solver2] load assembly: ${(performance.now() - t).toFixed(1)} ms`);
+  if (reportTiming) console.log(`  [solver] load assembly: ${(performance.now() - t).toFixed(1)} ms`);
 
   const constrainedDofs = new Set();
 
@@ -62,15 +80,14 @@ export function solvePlate(params) {
   t = performance.now();
   const PENALTY = 1e10;
   for (const d of constrainedDofs) {
-    Band[d * stride] *= PENALTY;
+    K[d * totalDof + d] *= PENALTY;
     rhs[d] = 0;
   }
-  if (reportTiming) console.log(`  [solver2] BC penalty: ${(performance.now() - t).toFixed(1)} ms`);
+  if (reportTiming) console.log(`  [solver] BC penalty: ${(performance.now() - t).toFixed(1)} ms`);
 
   t = performance.now();
-  bandedCholesky(Band, totalDof, bw, stride);
-  bandedCholeskySolve(Band, totalDof, bw, stride, rhs);
-  if (reportTiming) console.log(`  [solver2] banded cholesky solve: ${(performance.now() - t).toFixed(1)} ms`);
+  gaussSolve(K, rhs, totalDof);
+  if (reportTiming) console.log(`  [solver] gauss solve: ${(performance.now() - t).toFixed(1)} ms`);
 
   const deflections = new Float64Array(numNodes);
   let maxDefl = -Infinity, minDefl = Infinity;
@@ -119,6 +136,7 @@ function computeElementStiffness(a, b, t, E, nu) {
         for (let nj = 0; nj < 4; nj++) {
           const dix = dNdx[ni], diy = dNdy[ni], djx = dNdx[nj], djy = dNdy[nj];
           const c1_0 = Db[0] * djx + Db[2] * djy;
+          const c1_1 = Db[3] * djx + Db[5] * djy;
           const c1_2 = Db[6] * djx + Db[8] * djy;
           const c2_0 = Db[1] * djy + Db[2] * djx;
           const c2_1 = Db[4] * djy + Db[5] * djx;
@@ -127,7 +145,7 @@ function computeElementStiffness(a, b, t, E, nu) {
           const r = ni * 3, c = nj * 3;
           Ke[(r + 1) * 12 + (c + 1)] += factor * (dix * c1_0 + diy * c1_2);
           Ke[(r + 1) * 12 + (c + 2)] += factor * (dix * c2_0 + diy * c2_2);
-          Ke[(r + 2) * 12 + (c + 1)] += factor * (diy * (Db[3] * djx + Db[5] * djy) + dix * c1_2);
+          Ke[(r + 2) * 12 + (c + 1)] += factor * (diy * c1_1 + dix * c1_2);
           Ke[(r + 2) * 12 + (c + 2)] += factor * (diy * c2_1 + dix * c2_2);
         }
       }
@@ -135,6 +153,7 @@ function computeElementStiffness(a, b, t, E, nu) {
   }
 
   {
+    // const xi = 0, eta = 0;
     const wt = 4;
     const N = [0.25, 0.25, 0.25, 0.25];
     const dNdx = [-1 / (2 * a), 1 / (2 * a), 1 / (2 * a), -1 / (2 * a)];
@@ -160,7 +179,7 @@ function computeElementStiffness(a, b, t, E, nu) {
   return Ke;
 }
 
-function assembleGlobalBanded(Band, stride, Ke, nx, ny, nodesX, dofPerNode) {
+function assembleGlobalDense(K, Ke, nx, ny, nodesX, dofPerNode, n) {
   for (let ej = 0; ej < ny; ej++) {
     for (let ei = 0; ei < nx; ei++) {
       const n0 = ej * nodesX + ei;
@@ -171,15 +190,51 @@ function assembleGlobalBanded(Band, stride, Ke, nx, ny, nodesX, dofPerNode) {
             const gi = elemNodes[li] * dofPerNode + di;
             for (let dj = 0; dj < dofPerNode; dj++) {
               const gj = elemNodes[lj] * dofPerNode + dj;
-              if (gj >= gi) {
-                const keVal = Ke[(li * dofPerNode + di) * 12 + (lj * dofPerNode + dj)];
-                Band[gi * stride + (gj - gi)] += keVal;
-              }
+              const keVal = Ke[(li * dofPerNode + di) * 12 + (lj * dofPerNode + dj)];
+              K[gi * n + gj] += keVal;
             }
           }
         }
       }
     }
+  }
+}
+
+function gaussSolve(K, rhs, n) {
+  const swapBuf = new Float64Array(n);
+
+  for (let j = 0; j < n; j++) {
+    const jn = j * n;
+    let p = j;
+    let maxVal = Math.abs(K[jn + j]);
+    for (let i = j + 1; i < n; i++) {
+      const v = Math.abs(K[i * n + j]);
+      if (v > maxVal) { maxVal = v; p = i; }
+    }
+    if (p !== j) {
+      const pn = p * n;
+      swapBuf.set(K.subarray(jn, jn + n));
+      K.copyWithin(jn, pn, pn + n);
+      K.set(swapBuf.subarray(0, n), pn);
+      const tmp = rhs[j]; rhs[j] = rhs[p]; rhs[p] = tmp;
+    }
+    const pivot = K[jn + j];
+    if (Math.abs(pivot) < 1e-30) continue;
+    const invPivot = 1.0 / pivot;
+    for (let i = j + 1; i < n; i++) {
+      const in_ = i * n;
+      const m = K[in_ + j] * invPivot;
+      if (m === 0) continue;
+      K[in_ + j] = 0;
+      for (let c = j + 1; c < n; c++) K[in_ + c] -= m * K[jn + c];
+      rhs[i] -= m * rhs[j];
+    }
+  }
+  for (let j = n - 1; j >= 0; j--) {
+    const jn = j * n;
+    let s = rhs[j];
+    for (let c = j + 1; c < n; c++) s -= K[jn + c] * rhs[c];
+    rhs[j] = s / K[jn + j];
   }
 }
 
@@ -193,53 +248,5 @@ function assembleLoads(rhs, q, a, b, nx, ny, nodesX) {
       rhs[(n0 + nodesX + 1) * 3] -= elemLoad;
       rhs[(n0 + nodesX) * 3] -= elemLoad;
     }
-  }
-}
-
-function bandedCholesky(Band, n, bw, stride) {
-  for (let j = 0; j < n; j++) {
-    let sum = Band[j * stride];
-    let kStart = j - bw;
-    if (kStart < 0) kStart = 0;
-    for (let k = kStart; k < j; k++) {
-      const t = Band[k * stride + (j - k)];
-      sum -= t * t;
-    }
-    Band[j * stride] = sum > 0 ? Math.sqrt(sum) : 1e-15;
-
-    let iEnd = j + bw;
-    if (iEnd > n - 1) iEnd = n - 1;
-    for (let i = j + 1; i <= iEnd; i++) {
-      sum = Band[j * stride + (i - j)];
-      kStart = i - bw;
-      if (kStart < 0) kStart = 0;
-      for (let k = kStart; k < j; k++) {
-        sum -= Band[k * stride + (j - k)] * Band[k * stride + (i - k)];
-      }
-      Band[j * stride + (i - j)] = sum / Band[j * stride];
-    }
-  }
-}
-
-function bandedCholeskySolve(Band, n, bw, stride, x) {
-  // Forward: R^T * y = b
-  for (let i = 0; i < n; i++) {
-    let sum = x[i];
-    let kStart = i - bw;
-    if (kStart < 0) kStart = 0;
-    for (let k = kStart; k < i; k++) {
-      sum -= Band[k * stride + (i - k)] * x[k];
-    }
-    x[i] = sum / Band[i * stride];
-  }
-  // Back: R * x = y
-  for (let i = n - 1; i >= 0; i--) {
-    let sum = x[i];
-    let kEnd = i + bw;
-    if (kEnd > n - 1) kEnd = n - 1;
-    for (let k = i + 1; k <= kEnd; k++) {
-      sum -= Band[i * stride + (k - i)] * x[k];
-    }
-    x[i] = sum / Band[i * stride];
   }
 }
