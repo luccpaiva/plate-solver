@@ -4,7 +4,9 @@
 import { solveFEA } from "../solver/index.js";
 import { getMeshDivisions } from "../viewer/index.js";
 
-export function runAnalysis(state, updateResults, updatePlateDeformation) {
+export async function runAnalysis(state, updateResults, updatePlateDeformation) {
+  const t0 = performance.now();
+
   const { nx, ny } = getMeshDivisions(state);
   const { width, length } = state.plate;
   const pillarsLocal = state.pillars.map((p) => ({
@@ -13,7 +15,7 @@ export function runAnalysis(state, updateResults, updatePlateDeformation) {
     bc: p.bc
   }));
 
-  const results = solveFEA(
+  const results = await solveFEA(
     {
       plate: state.plate,
       material: state.material,
@@ -29,16 +31,18 @@ export function runAnalysis(state, updateResults, updatePlateDeformation) {
   state.results = results;
   updateResults(state);
   updatePlateDeformation(state);
+
+  state.results.totalTime = performance.now() - t0;
+  updateTotalTime(state);
 }
 
 export function updateResults(state) {
   if (!state.results) return;
 
-  const { maxDeflection, minDeflection, dof, solveTime, factorTime } =
+  const { maxDeflection, minDeflection, dof, backend } =
     state.results;
 
   const maxMm = Math.abs(minDeflection * 1000);
-  const minMm = Math.abs(maxDeflection * 1000);
 
   const maxEl = document.getElementById("maxDeflection");
   if (maxEl) {
@@ -47,22 +51,14 @@ export function updateResults(state) {
       "result-value " + (maxMm > 50 ? "bad" : maxMm > 20 ? "warn" : "good");
   }
 
-  const minEl = document.getElementById("minDeflection");
-  if (minEl) minEl.textContent = minMm.toFixed(2) + " mm";
-
   const dofEl = document.getElementById("dofCount");
   if (dofEl) dofEl.textContent = dof.toLocaleString();
 
-  const timeEl = document.getElementById("solveTime");
-  if (timeEl) {
-    timeEl.textContent = solveTime.toFixed(1) + " ms";
-    timeEl.className =
-      "result-value " +
-      (solveTime > 50 ? "bad" : solveTime > 20 ? "warn" : "good");
-  }
-
   const solverLabel = document.getElementById("solverLabel");
-  if (solverLabel) solverLabel.textContent = "FEA";
+  if (solverLabel) solverLabel.textContent = backend ? `FEA (${backend})` : "FEA";
+
+  const backendLabel = document.getElementById("backendLabel");
+  if (backendLabel) backendLabel.textContent = backend ?? "--";
 
   const factorTimeRow = document.getElementById("factorTimeRow");
   if (factorTimeRow) {
@@ -81,4 +77,16 @@ export function updateResults(state) {
   if (legendMid) legendMid.textContent = (maxMm / 2).toFixed(1);
   const legendMin = document.getElementById("legendMin");
   if (legendMin) legendMin.textContent = maxMm.toFixed(1);
+}
+
+function updateTotalTime(state) {
+  const totalTime = state.results?.totalTime;
+  if (totalTime == null) return;
+  const el = document.getElementById("totalTime");
+  if (el) {
+    el.textContent = totalTime.toFixed(1) + " ms";
+    el.className =
+      "result-value " +
+      (totalTime > 50 ? "bad" : totalTime > 20 ? "warn" : "good");
+  }
 }

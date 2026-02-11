@@ -10,6 +10,7 @@ import {
 } from "./viewer/index.js";
 import { runAnalysis, updateResults } from "./analysis/index.js";
 import { setupUI, setupInteraction } from "./ui/index.js";
+import { setSolverBackend, ensureWasmLoaded } from "./solver/index.js";
 
 const canvas = document.getElementById("canvas");
 const viewport = document.getElementById("viewport");
@@ -35,6 +36,11 @@ const api = {
   getPlateMesh: () => getPlateMesh(),
   getPillarMeshes: () => getPillarMeshes()
 };
+
+setSolverBackend(state.solverBackend ?? "auto");
+if (state.solverBackend === "auto" || state.solverBackend === "wasm") {
+  ensureWasmLoaded(); // Start loading in background
+}
 
 const { applyPillarPreset } = setupUI(state, api);
 setupInteraction(canvas, viewer.camera, state, api);

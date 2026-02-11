@@ -13,7 +13,8 @@ export const state = {
   meshNy: 9,
   results: null,
   feaCache: null,
-  showMainGrid: true,
-  showMeshGrid: true,
+  solverBackend: "auto", // "auto" | "js" | "wasm"
+  showMainGrid: false,
+  showMeshGrid: false,
   deflectionScale: 50
 };
