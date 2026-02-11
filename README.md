@@ -1,62 +1,48 @@
-# Plate Analysis – Folder Structure
+# Plate Analysis
+
+Rectangular plate FEA using Mindlin-Reissner theory. JS and WebAssembly solvers, 3D visualization.
+
+## Usage
+
+```bash
+npm install
+npm run dev
+```
+
+Open the app, adjust plate properties, add pillars, run analysis.
+
+## Solvers
+
+- **JavaScript** — `mindlin.js`, banded Cholesky. Always available.
+- **WebAssembly** — C++ via Emscripten. Faster. Bundled in the project.
+
+Use the Backend dropdown (Auto / WebAssembly / JavaScript) in the app. Wasm is bundled; Auto prefers it when available.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run test` | Run all tests |
+| `npm run benchmark` | CLI mesh-scaling benchmark |
+| `npm run benchmark:compare` | Instructions for Wasm vs JS benchmark |
+
+## Benchmarks
+
+- **Wasm vs JS:** `npm run dev` → open `/tools/benchmarks/wasm-vs-js-benchmark.html` → Run benchmark.
+- **Mesh scaling:** `npm run benchmark` → open `/tools/benchmarks/mesh-scaling-benchmark.html`.
 
 ## Project Structure
 
 ```
 plate-analysis/
-├── index.html
-├── package.json
-├── vite.config.js
-├── public/
-│   └── tools/
-│       └── profiling/
-│           ├── mesh-scaling-benchmark.html
-│           └── output/            # benchmark results
-├── src/
-│   ├── main.js                   
-│   ├── state/
-│   │   └── index.js              # Application state
-│   ├── viewer/
-│   │   ├── index.js
-│   │   ├── scene.js              # Three.js scene, camera, renderer, controls
-│   │   ├── plate.js              # Plate mesh, deformation
-│   │   └── pillars.js            # Pillar meshes
-│   ├── analysis/
-│   │   └── index.js              # FEA run, results display
-│   ├── ui/
-│   │   └── index.js              # Event handlers, sliders, interaction
-│   ├── solver/
-│   │   ├── index.js
-│   │   └── mindlin.js            # FEA core
-│   ├── styles/
-│   │   └── main.css
-│   ├── benchmarks/
-│   │   └── mesh-scaling.mjs
-│   └── tests/
-│       ├── check-infinite.mjs
-│       ├── symmetry.mjs
-│       └── abaqus.mjs
+├── src/                # App source
+│   ├── solver/         # mindlin.js (JS), wasm-loader.js, index.js (unified API)
+│   ├── viewer/         # Three.js scene, plate, pillars
+│   ├── analysis/       # Run FEA, update results
+│   └── ui/             # Controls
+├── wasm/               # C++ solver (solver.cpp, build.mjs)
+├── tools/              # Benchmarks, tests
+└── public/wasm/        # Bundled solver.js, solver.wasm
 ```
-
-## Usage
-
-- `npm install` then `npm run dev` — opens `index.html`, loads `src/main.js`.
-- `npm run lint` — run ESLint on `src/`.
-
-## Tests
-
-| Script | Description |
-|--------|-------------|
-| `npm run test` | Run all tests with summary |
-| `npm run test:infinite` | Debug solver, check for NaN/Inf |
-| `npm run test:symmetry` | Alternated edge support symmetry |
-| `npm run test:abaqus` | Compare vs Abaqus (5% tolerance) |
-
-## Benchmark
-
-| Script | Description |
-|--------|-------------|
-| `npm run benchmark` | Mesh density vs solve time |
-
-**Chart:** After `npm run benchmark`, run `npm run dev` and open  
-http://localhost:5173/tools/profiling/mesh-scaling-benchmark.html
