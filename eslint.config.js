@@ -16,7 +16,7 @@ export default [
     }
   },
   {
-    files: ["src/benchmarks/**/*.mjs", "src/tests/**/*.mjs"],
+    files: ["tools/**/*.mjs"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
