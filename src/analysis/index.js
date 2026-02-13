@@ -39,7 +39,7 @@ export async function runAnalysis(state, updateResults, updatePlateDeformation) 
 export function updateResults(state) {
   if (!state.results) return;
 
-  const { maxDeflection, minDeflection, dof, backend } =
+  const { minDeflection, dof, backend, solveTime } =
     state.results;
 
   const maxMm = Math.abs(minDeflection * 1000);
@@ -60,15 +60,9 @@ export function updateResults(state) {
   const backendLabel = document.getElementById("backendLabel");
   if (backendLabel) backendLabel.textContent = backend ?? "--";
 
-  const factorTimeRow = document.getElementById("factorTimeRow");
-  if (factorTimeRow) {
-    if (factorTime != null) {
-      document.getElementById("factorTime").textContent =
-        factorTime.toFixed(1) + " ms";
-      factorTimeRow.style.display = "";
-    } else {
-      factorTimeRow.style.display = "none";
-    }
+  const solveTimeEl = document.getElementById("solveTime");
+  if (solveTimeEl && solveTime != null) {
+    solveTimeEl.textContent = solveTime.toFixed(1) + " ms";
   }
 
   const legendMax = document.getElementById("legendMax");
