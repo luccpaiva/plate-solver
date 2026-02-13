@@ -16,5 +16,6 @@ export const state = {
   solverBackend: "auto", // "auto" | "js" | "wasm"
   showMainGrid: false,
   showMeshGrid: false,
-  deflectionScale: 50
+  deflectionScale: 50,
+  inspectMode: false
 };

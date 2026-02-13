@@ -153,3 +153,32 @@ export function getPlateMesh() {
 export function getPlateWireframe() {
   return plateWireframe;
 }
+
+/**
+ * Given a raycast intersection on the plate mesh, return the nearest vertex index.
+ */
+/**
+ * Given a raycast intersection on the plate mesh, return the nearest vertex index.
+ */
+export function getNearestVertexIndex(intersection) {
+  const mesh = intersection.object;
+  const face = intersection.face;
+  const pos = mesh.geometry.attributes.position;
+
+  // Convert world-space intersection point to local (geometry) space
+  const local = mesh.worldToLocal(intersection.point.clone());
+
+  let bestIdx = face.a;
+  let bestDist = Infinity;
+  for (const idx of [face.a, face.b, face.c]) {
+    const dx = pos.getX(idx) - local.x;
+    const dy = pos.getY(idx) - local.y;
+    const dz = pos.getZ(idx) - local.z;
+    const d = dx * dx + dy * dy + dz * dz;
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx = idx;
+    }
+  }
+  return bestIdx;
+}

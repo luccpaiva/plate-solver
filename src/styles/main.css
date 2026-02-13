@@ -298,3 +298,18 @@ button.secondary:hover {
 #legend > div {
   display: flex;
 }
+
+/* Inspect tooltip */
+.inspect-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--card) 95%, transparent);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 0.8em;
+  color: var(--foreground);
+  white-space: nowrap;
+  display: none;
+  z-index: 10;
+}

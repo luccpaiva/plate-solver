@@ -3,6 +3,7 @@
  */
 import * as THREE from "three";
 import { setSolverBackend } from "../solver/index.js";
+import { getNearestVertexIndex } from "../viewer/plate.js";
 
 function setupSlider(
   id,
@@ -146,20 +147,23 @@ export function setupUI(state, api) {
 
   const modeAdd = document.getElementById("modeAddPillar");
   const modeRemove = document.getElementById("modeRemove");
-  if (modeAdd) {
-    modeAdd.addEventListener("click", () => {
-      state.editMode = "add";
-      modeAdd.classList.add("active");
-      modeRemove?.classList.remove("active");
-    });
+  const modeInspect = document.getElementById("modeInspect");
+  const editButtons = [modeAdd, modeRemove, modeInspect];
+
+  function setEditMode(mode, activeBtn) {
+    state.editMode = mode;
+    state.inspectMode = mode === "inspect";
+    editButtons.forEach((b) => b?.classList.remove("active"));
+    activeBtn?.classList.add("active");
+    if (!state.inspectMode) {
+      const tooltip = document.getElementById("inspectTooltip");
+      if (tooltip) tooltip.style.display = "none";
+    }
   }
-  if (modeRemove) {
-    modeRemove.addEventListener("click", () => {
-      state.editMode = "remove";
-      modeRemove.classList.add("active");
-      modeAdd?.classList.remove("active");
-    });
-  }
+
+  if (modeAdd) modeAdd.addEventListener("click", () => setEditMode("add", modeAdd));
+  if (modeRemove) modeRemove.addEventListener("click", () => setEditMode("remove", modeRemove));
+  if (modeInspect) modeInspect.addEventListener("click", () => setEditMode("inspect", modeInspect));
 
   const showMainGrid = document.getElementById("showMainGrid");
   if (showMainGrid) {
@@ -254,8 +258,40 @@ export function setupUI(state, api) {
 export function setupInteraction(canvas, camera, state, api) {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
+  const tooltip = document.getElementById("inspectTooltip");
+
+  canvas.addEventListener("mousemove", (event) => {
+    if (!state.inspectMode || !state.results || !tooltip) return;
+
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const plateMesh = api.getPlateMesh();
+    if (!plateMesh) { tooltip.style.display = "none"; return; }
+
+    const intersects = raycaster.intersectObject(plateMesh, false);
+    if (intersects.length > 0) {
+      const vertexIndex = getNearestVertexIndex(intersects[0]);
+      const deflection = state.results.deflections[vertexIndex] || 0;
+      const mm = (deflection * 1000).toFixed(2);
+      tooltip.textContent = `${mm} mm`;
+      tooltip.style.left = `${event.clientX - rect.left + 14}px`;
+      tooltip.style.top = `${event.clientY - rect.top - 14}px`;
+      tooltip.style.display = "block";
+    } else {
+      tooltip.style.display = "none";
+    }
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    if (tooltip) tooltip.style.display = "none";
+  });
 
   canvas.addEventListener("click", (event) => {
+    if (state.inspectMode) return;
+
     const rect = canvas.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
