@@ -123,8 +123,7 @@ static void assembleLoads(double* rhs, double q, double a, double b, int nx, int
   }
 }
 
-static void bandedCholesky(double* Band, int n, int bw) {
-  int stride = bw + 1;
+static void bandedCholesky(double* Band, int n, int bw, int stride) {
   for (int j = 0; j < n; j++) {
     double sum = Band[j * stride];
     int kStart = j - bw;
@@ -149,8 +148,7 @@ static void bandedCholesky(double* Band, int n, int bw) {
   }
 }
 
-static void bandedCholeskySolve(const double* Band, int n, int bw, double* x) {
-  int stride = bw + 1;
+static void bandedCholeskySolve(const double* Band, int n, int bw, int stride, double* x) {
   // Forward: R^T * y = b  (R^T is lower triangular)
   for (int i = 0; i < n; i++) {
     double sum = x[i];
@@ -235,8 +233,8 @@ double solver_solve(
     rhs[d] = 0;
   }
 
-  bandedCholesky(Band.data(), totalDof, bw);
-  bandedCholeskySolve(Band.data(), totalDof, bw, rhs.data());
+  bandedCholesky(Band.data(), totalDof, bw, stride);
+  bandedCholeskySolve(Band.data(), totalDof, bw, stride, rhs.data());
 
   double maxDefl = -1e308, minDefl = 1e308;
   for (int n = 0; n < numNodes; n++) {
