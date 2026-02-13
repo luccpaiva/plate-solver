@@ -122,7 +122,7 @@ export function setMeshGridVisible(visible) {
 /**
  * Update plate deformation and colors from FEA results.
  */
-export function updatePlateDeformation(scene, state) {
+export function updatePlateDeformation(_scene, state) {
   if (!plateMesh || !state.results) return;
 
   const positions = plateMesh.geometry.attributes.position;
