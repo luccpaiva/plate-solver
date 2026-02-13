@@ -16,7 +16,7 @@ Open the app, adjust plate properties, add pillars, run analysis.
 - **JavaScript** — `mindlin.js`, banded Cholesky. Always available.
 - **WebAssembly** — C++ via Emscripten. Faster. Bundled in the project.
 
-Use the Backend dropdown (Auto / WebAssembly / JavaScript) in the app. Wasm is bundled; Auto prefers it when available.
+Use the Backend dropdown (Auto / WebAssembly / JavaScript) in the app. Auto prefers Wasm it when available.
 
 ## Scripts
 
@@ -31,7 +31,6 @@ Use the Backend dropdown (Auto / WebAssembly / JavaScript) in the app. Wasm is b
 ## Benchmarks
 
 - **Wasm vs JS:** `npm run dev` → open `/tools/benchmarks/wasm-vs-js-benchmark.html` → Run benchmark.
-- **Mesh scaling:** `npm run benchmark` → open `/tools/benchmarks/mesh-scaling-benchmark.html`.
 
 ## Project Structure
 
