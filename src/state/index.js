@@ -7,7 +7,7 @@ export const state = {
   load: 1000, // N/m² (1 kN/m²)
   pillars: [],
   editMode: "add", // 'add' or 'remove'
-  boundaryCondition: "fixed", // pillar type: 'fixed', 'pinned', 'roller'
+  boundaryCondition: "pinned", // pillar type: 'fixed', 'pinned', 'roller'
   edgeSupported: { left: true, right: true, top: true, bottom: true },
   meshNx: 9,
   meshNy: 9,
