@@ -14,9 +14,10 @@
     <h2>What is being measured</h2>
     <p>This benchmark compares two implementations of a <strong>Mindlin plate finite-element solver</strong>:</p>
     <ul>
-      <li><strong>JavaScript</strong> &mdash; dense stiffness matrix solved with Gauss elimination (<code>src/solver/mindlin.js</code>).</li>
-      <li><strong>WebAssembly</strong> &mdash; banded stiffness matrix solved with Cholesky factorisation, compiled from C++ via Emscripten (<code>wasm/solver.cpp</code>).</li>
+      <li><strong>JavaScript</strong> &mdash; banded Cholesky (<code>src/solver/mindlin.js</code>).</li>
+      <li><strong>WebAssembly</strong> &mdash; banded Cholesky, compiled from C++ via Emscripten (<code>wasm/solver.cpp</code>).</li>
     </ul>
+    <p>Both use the same algorithm (banded stiffness matrix + Cholesky factorisation). The comparison measures implementation performance: V8 JIT vs ahead-of-time-compiled WASM.</p>
     <p>For each mesh size <em>n&times;n</em>, the solver assembles and solves a system with <strong>DOF&nbsp;=&nbsp;3&thinsp;(n+1)&sup2;</strong> (three unknowns per node: deflection&nbsp;<em>w</em>, and two rotations&nbsp;<em>&theta;<sub>x</sub></em>,&nbsp;<em>&theta;<sub>y</sub></em>).
     The reported time covers <strong>assembly + solve only</strong> &mdash; no rendering, no DOM updates.
     Each mesh size is run 2&nbsp;warm-up iterations (discarded) followed by 5&nbsp;timed iterations; the chart shows the average of the timed runs.</p>
@@ -43,8 +44,8 @@
     import { solveFEA, setSolverBackend } from "/src/solver/index.js";
     import { loadWasmSolver, isWasmReady } from "/src/solver/wasm-loader.js";
 
-    const RUNS = 5;
-    const WARMUP = 2;
+    const RUNS = 3;
+    const WARMUP = 0;
     const MESH_SIZES = [5, 10, 15, 20, 25, 30, 35, 41, 45, 50, 55, 60, 65, 70];
     const params = {
       plate: { width: 20, length: 20, thickness: 0.2 },
