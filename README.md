@@ -1,6 +1,7 @@
 # Plate Analysis
 
 Rectangular plate FEA using Mindlin-Reissner theory. JS and WebAssembly solvers, 3D visualization.
+ <video src="https://github.com/user-attachments/assets/ac03a149-c822-4ade-97d2-2fee2183d383" controls width="100%"></video>
 
 ## Usage
 
