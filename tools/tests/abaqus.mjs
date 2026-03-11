@@ -19,21 +19,20 @@ const edgeSupported = { left: true, right: true, top: true, bottom: true };
 const TOL = 0.02; // 2%
 
 const cases = [
-  // No support — all edges SS only
   {
     label: "10x10 no support",
     width: 10, length: 10, pillars: [],
-    abaqusLinear: 2.819, abaqusNlgeom: 2.819  // w/t=0.01, no difference
+    abaqusLinear: 2.819, abaqusNlgeom: 2.819
   },
   {
     label: "20x20 no support",
     width: 20, length: 20, pillars: [],
-    abaqusLinear: 44.714, abaqusNlgeom: 42.055  // w/t=0.22, ~6% membrane effect
+    abaqusLinear: 44.714, abaqusNlgeom: 42.055
   },
   {
     label: "30x30 no support",
     width: 30, length: 30, pillars: [],
-    abaqusLinear: 225.743, abaqusNlgeom: 135.069  // w/t=0.68, ~40% membrane effect
+    abaqusLinear: 225.743, abaqusNlgeom: 135.069
   },
 
   // Center pillar (pinned, w=0 only)
@@ -41,19 +40,19 @@ const cases = [
     label: "10x10 center pillar",
     width: 10, length: 10,
     pillars: [{ x: 5, z: 5, bc: "pinned" }],
-    abaqusLinear: 0.34, abaqusNlgeom: 0.34  // w/t=0.002, no difference
+    abaqusLinear: 0.34, abaqusNlgeom: 0.34
   },
   {
     label: "20x20 center pillar",
     width: 20, length: 20,
     pillars: [{ x: 10, z: 10, bc: "pinned" }],
-    abaqusLinear: 5.332, abaqusNlgeom: 5.327  // w/t=0.03, negligible
+    abaqusLinear: 5.332, abaqusNlgeom: 5.327
   },
   {
     label: "30x30 center pillar",
     width: 30, length: 30,
     pillars: [{ x: 15, z: 15, bc: "pinned" }],
-    abaqusLinear: 26.335, abaqusNlgeom: 26.335  // w/t=0.13, negligible
+    abaqusLinear: 26.335, abaqusNlgeom: 26.335
   }
 ];
 
