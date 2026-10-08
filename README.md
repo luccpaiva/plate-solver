@@ -4,8 +4,6 @@ Rectangular plate FEA using Mindlin-Reissner theory, for concrete slabs on walls
 
 ![A guided tour of the workspace: a slab is thinned and one of its edges freed, columns are stood under it, bending moments are shown and cut along section A–A, a point load is dragged across it, columns are placed automatically, and the Verification and Performance pages are run](assets/demo_plate.webp)
 
-_A recording of the guided tour, about a minute and three quarters, looping. Every number in it was solved as it played._
-
 ## Usage
 
 ```bash
