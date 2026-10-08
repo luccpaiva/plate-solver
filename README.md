@@ -1,4 +1,4 @@
-# Plate Analysis
+# 3D FEM Plate Solver
 
 Rectangular plate FEA using Mindlin-Reissner theory, for concrete slabs on walls and columns. The solver's kernel exists in JavaScript and in C++ compiled to WebAssembly; the workspace around it is plain DOM and raw WebGL.
 
