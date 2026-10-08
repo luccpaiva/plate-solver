@@ -1,0 +1,22 @@
+/* Plate Solver: the page around the workspace, which workspace.css styles. */
+@import './workspace.css';
+
+html, body {
+  height: 100%;
+  margin: 0;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--pl-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The workspace fills the window. Below the size it was drawn for it keeps
+   that size and the page scrolls, rather than squeezing the slab out. */
+.pl-shell {
+  position: relative;
+  min-width: 1180px;
+  height: 100vh;
+  min-height: 720px;
+}

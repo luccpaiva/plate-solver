@@ -1,56 +1,23 @@
-/**
- * App entry: orchestration only.
- */
-import "./styles/main.css";
-import { state } from "./state/index.js";
-import {
-  initViewer,
-  getPlateMesh,
-  getPillarMeshes
-} from "./viewer/index.js";
-import { runAnalysis, updateResults } from "./analysis/index.js";
-import { setupUI, setupInteraction } from "./ui/index.js";
-import { setSolverBackend, ensureWasmLoaded } from "./solver/index.js";
+// Entry: starts the solver's worker and builds the workspace around it.
+import "./styles.css";
+import { createApp } from "./app.js";
 
-const canvas = document.getElementById("canvas");
-const viewport = document.getElementById("viewport");
-
-const viewer = initViewer(canvas, viewport);
-
-viewer.gridHelper.visible = state.showMainGrid;
-
-const runAnalysisBound = () =>
-  runAnalysis(
-    state,
-    (s) => updateResults(s),
-    (s) => viewer.updatePlateDeformation(s)
-  );
-
-const api = {
-  createPlate: (s) => viewer.createPlate(s),
-  updatePillars: (s) => viewer.updatePillars(s),
-  updatePlateDeformation: (s) => viewer.updatePlateDeformation(s),
-  runAnalysis: runAnalysisBound,
-  setMeshGridVisible: viewer.setMeshGridVisible,
-  setGridVisible: viewer.setGridVisible,
-  getPlateMesh: () => getPlateMesh(),
-  getPillarMeshes: () => getPillarMeshes()
+// The worker behind one call: ask with a kind and a payload, get the answer.
+const worker = new Worker(new URL("./solver.worker.js", import.meta.url), { type: "module" });
+const waiting = new Map();
+let sent = 0;
+worker.onmessage = ({ data: { id, result, error } }) => {
+  const { resolve, reject } = waiting.get(id);
+  waiting.delete(id);
+  if (error) reject(new Error(error));
+  else resolve(result);
 };
+const solve = (type, payload) => new Promise((resolve, reject) => {
+  waiting.set(++sent, { resolve, reject });
+  worker.postMessage({ id: sent, type, payload });
+});
 
-setSolverBackend(state.solverBackend ?? "auto");
-if (state.solverBackend === "auto" || state.solverBackend === "wasm") {
-  ensureWasmLoaded(); // Start loading in background
-}
+const app = createApp(document.getElementById("shell"), solve);
 
-const { applyPillarPreset } = setupUI(state, api);
-setupInteraction(canvas, viewer.camera, state, api);
-
-window.addEventListener("resize", () => viewer.onResize(viewport));
-
-viewer.onResize(viewport);
-
-applyPillarPreset(state, 1);
-viewer.createPlate(state);
-viewer.updatePillars(state);
-runAnalysisBound();
-viewer.animate();
+// the view is drawn at the size it really has
+new ResizeObserver(() => app.resize(1)).observe(document.getElementById("view"));

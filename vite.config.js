@@ -2,12 +2,12 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   root: ".",
-  publicDir: "public",
   build: {
     outDir: "dist",
     rollupOptions: {
       input: "index.html",
-      external: ["/wasm/solver.js"],
     },
   },
+  // the solver's worker is a module: it imports the kernel and fetches solver.wasm
+  worker: { format: "es" },
 });

@@ -1,23 +1,23 @@
 {
   "name": "plate-analysis",
   "version": "0.1.0",
-  "description": "Plate structural analysis with FEA solver and 3D visualization",
+  "description": "Plate structural analysis with a finite-element solver in JavaScript and WebAssembly, and a WebGL viewer",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:wasm": "node wasm/build.mjs",
     "preview": "vite preview",
+    "test": "node tools/tests/run-all.mjs",
     "test:infinite": "node tools/tests/check-infinite.mjs",
     "test:symmetry": "node tools/tests/symmetry.mjs",
+    "test:rank": "node tools/tests/rank.mjs",
+    "test:equilibrium": "node tools/tests/equilibrium.mjs",
+    "test:kernels": "node tools/tests/kernels.mjs",
+    "test:closed-form": "node tools/tests/closed-form.mjs",
     "test:abaqus": "node tools/tests/abaqus.mjs",
     "benchmark": "node tools/benchmarks/mesh-scaling.mjs",
-    "benchmark:compare": "node tools/benchmarks/wasm-vs-js.mjs",
-    "test": "node tools/tests/run-all.mjs",
-    "lint": "eslint src/"
-  },
-  "dependencies": {
-    "three": "^0.160.0"
+    "lint": "eslint src/ tools/"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
