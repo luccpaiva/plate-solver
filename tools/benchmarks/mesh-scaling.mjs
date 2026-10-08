@@ -1,71 +1,51 @@
 /**
- * Benchmark: mesh density vs solve time.
- * Gradually increases nx=ny and records nodes vs compute time.
- * Output written to tools/profiling/output/mesh-scaling.json for plotting.
+ * Benchmark: mesh density vs solve time, for both kernels.
+ * Gradually increases nx = ny and records the time to assemble, factorise and
+ * substitute. Output written to tools/benchmarks/output/mesh-scaling.json.
+ * The app's Performance page runs the same comparison in the browser.
  */
-import { solveFEA, setSolverBackend } from "../../src/solver/index.js";
-
-setSolverBackend("js");
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { analyse, SIMPLE } from "../../src/solver.js";
+import { js, wasm, LAB, square } from "../kernels.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outDir = join(__dirname, "output");
 const outFile = join(outDir, "mesh-scaling.json");
 
-const params = {
-  plate: { width: 20, length: 20, thickness: 0.2 },
-  material: { E: 20e9, nu: 0.3 },
-  load: 1000,
-  pillars: [],
-  edgeSupported: { left: true, right: true, top: true, bottom: true },
-  reportTiming: false
-};
+const SIDE = 20;
+const MESH_SIZES = [8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80];
+const RUNS = 5;
 
-// Mesh sizes to test (nx = ny), gradual steps
-const MESH_SIZES = [5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40];
-
-const results = [];
-
-console.log("Mesh scaling benchmark (nodes vs solve time)\n");
-console.log("Plate:", params.plate.width, "x", params.plate.length, "m\n");
-
-const RUNS = 3;
-
-for (const n of MESH_SIZES) {
-  const nx = n, ny = n;
-  const nodes = (nx + 1) * (ny + 1);
-  const dof = nodes * 3;
-
-  process.stdout.write(`  nx=ny=${n} (${nodes} nodes, ${dof} DOF)... `);
-
-  let sum = 0;
+function best(kernel, model) {
+  let ms = Infinity;
   for (let r = 0; r < RUNS; r++) {
-    const result = await solveFEA({ ...params, nx, ny });
-    sum += result.solveTime;
+    const start = performance.now();
+    analyse({ ...model, bare: true }, {}, kernel);
+    ms = Math.min(ms, performance.now() - start);
   }
-  const avgMs = sum / RUNS;
-
-  results.push({
-    nx,
-    ny,
-    nodes,
-    dof,
-    solveTimeMs: avgMs
-  });
-
-  console.log(`${avgMs.toFixed(0)} ms (avg of ${RUNS})`);
+  return ms;
 }
 
-const output = {
-  timestamp: new Date().toISOString(),
-  params: { plate: params.plate, material: params.material, load: params.load },
-  results
-};
+console.log("Mesh scaling benchmark (unknowns vs solve time)\n");
+console.log(`Plate: ${SIDE} x ${SIDE} m on four walls, best of ${RUNS} runs\n`);
+console.log("  mesh".padEnd(12) + "unknowns".padStart(10) + "JS".padStart(12) + "WASM".padStart(12) + "ratio".padStart(8));
+
+const results = [];
+for (const n of MESH_SIZES) {
+  const model = square(SIDE, n, SIMPLE);
+  const dof = 3 * (n + 1) ** 2;
+  const jsMs = best(js, model), wasmMs = best(wasm, model);
+  results.push({ nx: n, ny: n, nodes: (n + 1) ** 2, dof, jsMs, wasmMs });
+  console.log(
+    `  ${n} x ${n}`.padEnd(12) + String(dof).padStart(10) +
+    (jsMs.toFixed(1) + " ms").padStart(12) + (wasmMs.toFixed(1) + " ms").padStart(12) +
+    ((jsMs / wasmMs).toFixed(1) + "x").padStart(8)
+  );
+}
 
 mkdirSync(outDir, { recursive: true });
-writeFileSync(outFile, JSON.stringify(output, null, 2), "utf8");
+writeFileSync(outFile, JSON.stringify({ timestamp: new Date().toISOString(), params: { side: SIDE, ...LAB }, results }, null, 2), "utf8");
 
 console.log(`\nResults written to ${outFile}`);
-console.log("\nTo view: npm run dev → /tools/benchmarks/mesh-scaling-benchmark.html");

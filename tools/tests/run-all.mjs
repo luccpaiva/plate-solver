@@ -10,6 +10,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const tests = [
   { name: "infinite", script: "check-infinite.mjs" },
   { name: "symmetry", script: "symmetry.mjs" },
+  { name: "rank", script: "rank.mjs" },
+  { name: "equilibrium", script: "equilibrium.mjs" },
+  { name: "kernels", script: "kernels.mjs" },
+  { name: "closed-form", script: "closed-form.mjs" },
   { name: "abaqus", script: "abaqus.mjs" }
 ];
 
