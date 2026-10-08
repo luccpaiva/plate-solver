@@ -11,13 +11,6 @@ npm install
 npm run dev
 ```
 
-Open the app and change anything: every change is solved again, in a worker, and the slab eases into its new shape.
-
-- **Model** — slab size and thickness, concrete, self-weight and imposed load. Each edge is free, simply supported or fixed (click it on the plan). Tools on the view: stand or remove columns, drag a point load, cut section A–A.
-- **Results** — deflection against a span/250, /360 or /500 limit, bending and twisting moments, the reaction of every column and wall, and the time each solve took. A slab that nothing holds still is reported as a mechanism.
-- **Add columns until it passes** — a greedy search: a column under the deepest point, solve, repeat.
-- **Verification** and **Performance** — the checks and the benchmark below, run in the browser.
-
 ## Solver
 
 `src/solver.js`. Four-node elements with three unknowns a node (deflection and two rotations). Bending is integrated 2 × 2; the shear strain is tied at the middle of each element side (MITC4), which neither locks on a thin slab nor leaves a spurious mode.
@@ -92,7 +85,3 @@ plate-analysis/
 ├── wasm/                   # C++ kernel (solver.cpp, build.mjs)
 └── tools/                  # Tests, benchmark, export-demo.mjs
 ```
-
-## Embedding
-
-The workspace knows nothing about the page it sits in. `node tools/export-demo.mjs <directory>` copies it into another project, which supplies its own page around it: that is how the guided demo on my portfolio is kept in step with this repository.
