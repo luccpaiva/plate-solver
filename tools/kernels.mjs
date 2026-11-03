@@ -13,7 +13,7 @@ export { js };
 /** Largest absolute difference between two fields. */
 export const apart = (a, b) => a.reduce((most, value, index) => Math.max(most, Math.abs(value - b[index])), 0);
 
-/** The slab the Abaqus references and the closed-form cases were worked out for. */
+/** The slab the reference software cases and the closed-form cases were worked out for. */
 export const LAB = { thickness: 0.2, E: 20e9, nu: 0.3, q: 1000 };
 
 /** A square slab with every edge supported the same way. */

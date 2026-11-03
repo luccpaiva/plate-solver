@@ -52,7 +52,7 @@ npm run build:wasm
 | `equilibrium` | Reactions sum to the load, with and without a reused factor |
 | `kernels` | JavaScript and WebAssembly agree to rounding |
 | `closed-form` | Second-order convergence to Navier's series; Timoshenko's coefficients for simply supported and fixed squares within 1% |
-| `abaqus` | Six Abaqus S4R models on the same 0.25 m mesh, within 2% |
+| `reference` | Six shell models from reference software on the same 0.25 m mesh, within 2% |
 
 ## Scripts
 

@@ -15,7 +15,7 @@
     "test:equilibrium": "node tools/tests/equilibrium.mjs",
     "test:kernels": "node tools/tests/kernels.mjs",
     "test:closed-form": "node tools/tests/closed-form.mjs",
-    "test:abaqus": "node tools/tests/abaqus.mjs",
+    "test:reference": "node tools/tests/reference.mjs",
     "benchmark": "node tools/benchmarks/mesh-scaling.mjs",
     "lint": "eslint src/ tools/"
   },

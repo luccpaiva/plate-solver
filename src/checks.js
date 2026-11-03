@@ -32,7 +32,7 @@ const SOLVES = {
 
 // [case, solve, what to read from it, reference, unit, digits, digits the reference was given to]
 const GROUPS = [
-  ["Abaqus S4R shell, 0.25 m mesh", "Peak deflection of a 200 mm slab under 1 kN/m², solved here on the same mesh.", [
+  ["Reference software, shell elements, 0.25 m mesh", "Peak deflection of a 200 mm slab under 1 kN/m², solved here on the same mesh.", [
     ["10 × 10 m on four walls", "walls10", deepest, 2.819, "mm", 3],
     ["10 × 10 m, column at the centre", "column10", deepest, 0.34, "mm", 3, 2],
     ["20 × 20 m on four walls", "walls20", deepest, 44.714, "mm", 2],

@@ -1,12 +1,13 @@
 /**
- * Test: compare the solver against Abaqus S4R reference values.
- * Abaqus model: S4R shell, mesh seed 0.25 m. Solved here on the same mesh.
+ * Test: compare the solver against values from reference software.
+ * Reference model: four-node shell with reduced integration, 0.25 m mesh.
+ * Solved here on the same mesh.
  * Material: E = 20 GPa, nu = 0.3, t = 200 mm, q = 1 kPa.
- * All edges simply supported (U3 = 0), the pillar pinned.
+ * All edges simply supported (w = 0), the pillar pinned.
  *
  * Two reference sets:
- *   - NLGEOM=OFF (linear): the comparison, to within 2%
- *   - NLGEOM=ON  (nonlinear): shown for the membrane stiffening it brings
+ *   - linear: the comparison, to within 2%
+ *   - geometrically nonlinear: shown for the membrane stiffening it brings
  *
  * The 30 x 30 pillar case carries the same value in both sets. Scaling the
  * 20 x 20 case by (30 / 20)^4, which linear thin-plate theory allows, gives
@@ -19,12 +20,12 @@ const TOL = 0.02;
 const SEED = 0.25;
 
 const cases = [
-  { label: "10x10 no support", side: 10, abaqusLinear: 2.819, abaqusNlgeom: 2.819 },
-  { label: "20x20 no support", side: 20, abaqusLinear: 44.714, abaqusNlgeom: 42.055 },
-  { label: "30x30 no support", side: 30, abaqusLinear: 225.743, abaqusNlgeom: 135.069 },
-  { label: "10x10 center pillar", side: 10, pillar: true, abaqusLinear: 0.34, abaqusNlgeom: 0.34 },
-  { label: "20x20 center pillar", side: 20, pillar: true, abaqusLinear: 5.332, abaqusNlgeom: 5.327 },
-  { label: "30x30 center pillar", side: 30, pillar: true, abaqusLinear: 26.335, abaqusNlgeom: 26.335 }
+  { label: "10x10 no support", side: 10, linear: 2.819, nonlinear: 2.819 },
+  { label: "20x20 no support", side: 20, linear: 44.714, nonlinear: 42.055 },
+  { label: "30x30 no support", side: 30, linear: 225.743, nonlinear: 135.069 },
+  { label: "10x10 center pillar", side: 10, pillar: true, linear: 0.34, nonlinear: 0.34 },
+  { label: "20x20 center pillar", side: 20, pillar: true, linear: 5.332, nonlinear: 5.327 },
+  { label: "30x30 center pillar", side: 30, pillar: true, linear: 26.335, nonlinear: 26.335 }
 ];
 
 // the largest mesh has 43,923 unknowns; the compiled kernel keeps this quick
@@ -33,10 +34,10 @@ function run(c) {
   return analyse(square(c.side, c.side / SEED, SIMPLE, { columns }), {}, wasm).peak.w * 1000;
 }
 
-console.log("Abaqus S4R validation test\n");
+console.log("Reference software validation test\n");
 console.log("Material: E=20 GPa, nu=0.3, t=200mm, q=1 kPa");
-console.log(`Mesh: ${SEED} m, as in Abaqus`);
-console.log(`Tolerance: ${TOL * 100}% (vs linear Abaqus)`);
+console.log(`Mesh: ${SEED} m, as in the reference models`);
+console.log(`Tolerance: ${TOL * 100}% (vs linear reference)`);
 console.log("w/t = max deflection / plate thickness (nonlinearity indicator)\n");
 
 const col = { case: 28, val: 12, err: 8, wt: 7, nlg: 20 };
@@ -46,11 +47,11 @@ console.log("─".repeat(W));
 console.log(
   "Case".padEnd(col.case) +
   "Ours".padStart(col.val) +
-  "Abaqus".padStart(col.val) +
-  "NLGEOM".padStart(col.val) +
+  "Linear".padStart(col.val) +
+  "Nonlinear".padStart(col.val) +
   "Err".padStart(col.err) +
   "w/t".padStart(col.wt) +
-  "NLGEOM impact".padStart(col.nlg)
+  "Nonlinear impact".padStart(col.nlg)
 );
 console.log("─".repeat(W));
 
@@ -58,8 +59,8 @@ let allPass = true;
 
 for (const c of cases) {
   const ours = run(c);
-  const ref = c.abaqusLinear;
-  const nlg = c.abaqusNlgeom;
+  const ref = c.linear;
+  const nlg = c.nonlinear;
   const err = Math.abs(ours - ref) / ref;
   const pass = err <= TOL;
   if (!pass) allPass = false;
@@ -82,6 +83,6 @@ for (const c of cases) {
 }
 
 console.log("─".repeat(W));
-console.log(`\nOverall (${cases.length} cases vs linear Abaqus): ${allPass ? "PASS" : "FAIL"}`);
+console.log(`\nOverall (${cases.length} cases vs linear reference): ${allPass ? "PASS" : "FAIL"}`);
 
 process.exit(allPass ? 0 : 1);

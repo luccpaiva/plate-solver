@@ -14,7 +14,7 @@ const tests = [
   { name: "equilibrium", script: "equilibrium.mjs" },
   { name: "kernels", script: "kernels.mjs" },
   { name: "closed-form", script: "closed-form.mjs" },
-  { name: "abaqus", script: "abaqus.mjs" }
+  { name: "reference", script: "reference.mjs" }
 ];
 
 const results = [];
