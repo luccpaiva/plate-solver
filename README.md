@@ -2,6 +2,8 @@
 
 Rectangular plate FEA using Mindlin-Reissner theory, for concrete slabs on walls and columns. The solver's kernel exists in JavaScript and in C++ compiled to WebAssembly; the workspace around it is plain DOM and raw WebGL.
 
+It is for structural engineers and students who want a slab's deflections, moments and reactions to follow every change they make, in the browser, with nothing to install.
+
 ![A guided tour of the workspace: a slab is thinned and one of its edges freed, columns are stood under it, bending moments are shown and cut along section A–A, a point load is dragged across it, columns are placed automatically, and the Verification and Performance pages are run](assets/demo_plate.webp)
 
 ## Usage
@@ -85,3 +87,11 @@ plate-analysis/
 ├── wasm/                   # C++ kernel (solver.cpp, build.mjs)
 └── tools/                  # Tests, benchmark, export-demo.mjs
 ```
+
+## Roadmap
+
+[ROADMAP.md](ROADMAP.md): any outline with openings, columns with a size, load combinations, reinforcement and punching checks, and open verification models.
+
+## License
+
+[MIT](LICENSE)
